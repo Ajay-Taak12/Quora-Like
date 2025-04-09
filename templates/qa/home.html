@@ -1,0 +1,22 @@
+<!-- qa/templates/qa/home.html -->
+{% extends 'qa/base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Recent Questions</h1>
+    
+    {% if questions %}
+        <div class="list-group">
+            {% for question in questions %}
+                <a href="{% url 'question_detail' question.pk %}" class="list-group-item list-group-item-action">
+                    <h5>{{ question.title }}</h5>
+                    <p class="mb-1">{{ question.content|truncatewords:30 }}</p>
+                    <small>Asked by {{ question.author.username }} on {{ question.created_at|date:"M d, Y" }}</small>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No questions yet. Be the first to <a href="{% url 'ask_question' %}">ask a question</a>!</p>
+    {% endif %}
+{% endblock %}

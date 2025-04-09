@@ -1,0 +1,97 @@
+<!-- qa/templates/qa/question_detail.html -->
+{% extends 'qa/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ question.title }}{% endblock %}
+
+{% block content %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="card-title">{{ question.title }}</h2>
+            <p class="card-text">{{ question.content }}</p>
+            <div class="d-flex justify-content-between">
+                <small class="text-muted">Asked by {{ question.author.username }} on {{ question.created_at|date:"M d, Y" }}</small>
+                {% if question.author == user %}
+                    <div>
+                        <a href="#" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        <a href="#" class="btn btn-sm btn-outline-danger">Delete</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Answers</h3>
+        </div>
+        <div class="card-body">
+            {% if question.answers.all %}
+                {% for answer in question.answers.all %}
+                    <div class="mb-3 p-3 border rounded">
+                        <p>{{ answer.content }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Answered by {{ answer.author.username }} on {{ answer.created_at|date:"M d, Y" }}</small>
+                            <div>
+                                <button class="btn btn-sm like-btn {% if user in answer.likes.all %}btn-primary{% else %}btn-outline-primary{% endif %}" 
+                                        data-answer-id="{{ answer.id }}">
+                                    Like (<span class="like-count">{{ answer.likes.count }}</span>)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No answers yet. Be the first to answer!</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if user.is_authenticated %}
+        <div class="card">
+            <div class="card-header">
+                <h3>Your Answer</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'post_answer' question.pk %}">
+                    {% csrf_token %}
+                    {{ answer_form|crispy }}
+                    <button type="submit" class="btn btn-primary mt-3">Post Answer</button>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            Please <a href="{% url 'login' %}">login</a> to post an answer.
+        </div>
+    {% endif %}
+
+    {% block scripts %}
+        <script>
+            $(document).ready(function() {
+                $('.like-btn').click(function() {
+                    const answerId = $(this).data('answer-id');
+                    const likeBtn = $(this);
+                    const likeCount = likeBtn.find('.like-count');
+                    
+                    $.ajax({
+                        url: `/like/${answerId}/`,
+                        type: 'POST',
+                        data: {
+                            'csrfmiddlewaretoken': '{{ csrf_token }}'
+                        },
+                        dataType: 'json',
+                        success: function(data) {
+                            likeCount.text(data.likes_count);
+                            if (data.is_liked) {
+                                likeBtn.removeClass('btn-outline-primary').addClass('btn-primary');
+                            } else {
+                                likeBtn.removeClass('btn-primary').addClass('btn-outline-primary');
+                            }
+                        }
+                    });
+                });
+            });
+        </script>
+    {% endblock %}
+{% endblock %}
